@@ -1,0 +1,52 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run release-please
+        uses: google-github-actions/release-please-action@v4
+        id: release
+        with:
+          release-type: go
+          package-name: smallflow
+
+      - name: Checkout code
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Build binaries
+        if: ${{ steps.release.outputs.release_created }}
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o smallflow-linux-amd64 ./cmd/smallflow
+          GOOS=linux GOARCH=arm64 go build -o smallflow-linux-arm64 ./cmd/smallflow
+          GOOS=darwin GOARCH=amd64 go build -o smallflow-darwin-amd64 ./cmd/smallflow
+          GOOS=darwin GOARCH=arm64 go build -o smallflow-darwin-arm64 ./cmd/smallflow
+          GOOS=windows GOARCH=amd64 go build -o smallflow-windows-amd64.exe ./cmd/smallflow
+
+      - name: Upload Release Artifacts
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ steps.release.outputs.tag_name }} \
+            smallflow-linux-amd64 \
+            smallflow-linux-arm64 \
+            smallflow-darwin-amd64 \
+            smallflow-darwin-arm64 \
+            smallflow-windows-amd64.exe
