@@ -2,6 +2,8 @@ package core
 
 import (
 	"fmt"
+	"github.com/morebec/go-misas/misas"
+	"github.com/morebec/go-misas/mx"
 	"time"
 )
 
@@ -37,19 +39,19 @@ func StartRun(workflowID WorkflowID, id RunID, startedAt time.Time) *Run {
 	return run
 }
 
-func (r *Run) StartStep(stepID StepID, id ActionID, ignoreErrors bool, currentTime time.Time) error {
+func (r *Run) StartStep(stepID StepID, id ActionID, ignoreErrors bool, currentTime time.Time) misas.Error {
 	if r.CurrentStepID == stepID {
 		// already running, idempotent
 		return nil
 	}
 
 	if r.CurrentStepID != "" {
-		return fmt.Errorf(
-			"workflow error: %s: cannot start step %s, step %s is already running",
+		return mx.ErrConflict.WithMessage(fmt.Sprintf(
+			"workflow error: %s: cannot start step %s: step %s is currently running",
 			r.WorkflowID,
 			stepID,
 			r.CurrentStepID,
-		)
+		))
 	}
 
 	r.record(StepStartedEvent{
@@ -64,7 +66,7 @@ func (r *Run) StartStep(stepID StepID, id ActionID, ignoreErrors bool, currentTi
 	return nil
 }
 
-func (r *Run) EndStep(stepID StepID, err *WorkflowError, currentTime time.Time) error {
+func (r *Run) EndStep(stepID StepID, err *WorkflowError, currentTime time.Time) misas.Error {
 	step := r.Steps[stepID]
 	if step.EndedAt != nil {
 		// already ended, idempotent
@@ -72,12 +74,12 @@ func (r *Run) EndStep(stepID StepID, err *WorkflowError, currentTime time.Time) 
 	}
 
 	if r.CurrentStepID != stepID {
-		return fmt.Errorf(
-			"workflow error: %s: cannot end step %s, step %s is currently running",
+		return mx.ErrConflict.WithMessage(fmt.Sprintf(
+			"workflow error: %s: cannot start step %s: step %s is currently running",
 			r.WorkflowID,
 			stepID,
 			r.CurrentStepID,
-		)
+		))
 	}
 
 	status := StepStatusSucceeded

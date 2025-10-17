@@ -2,36 +2,33 @@ package core
 
 import (
 	"context"
-	"fmt"
+	"github.com/morebec/go-misas/misas"
+	"github.com/morebec/go-misas/muuid"
+	"github.com/morebec/go-misas/mx"
 )
 
 type TriggerWorkflowCommandHandler struct {
 	WorkflowRepository WorkflowRepository
-	Clock              Clock
+	UUIDGenerator      muuid.UUIDGenerator
+	Clock              misas.Clock
 }
 
-func (h TriggerWorkflowCommandHandler) Handle(ctx context.Context, cmd TriggerWorkflowCommand) error {
+func (h TriggerWorkflowCommandHandler) Handle(ctx context.Context, cmd TriggerWorkflowCommand) misas.CommandResult {
 	wf, err := h.WorkflowRepository.FindByID(ctx, cmd.WorkflowID)
 	if err != nil {
-		return err
+		return mx.CommandResultFromError(err)
 	}
 	if wf == nil {
-		return fmt.Errorf("workflow not found: %s", cmd.WorkflowID)
-	}
-
-	if cmd.WorkflowID == "" {
-		return fmt.Errorf("workflow ID is required")
+		return WorkflowNotFoundCommandResult(cmd.WorkflowID)
 	}
 
 	if cmd.RunID == "" {
-		cmd.RunID = generateRunID()
+		cmd.RunID = h.UUIDGenerator.Generate().String()
 	}
 
 	if err := wf.Trigger(RunID(cmd.RunID), h.Clock.Now()); err != nil {
-		return err
+		return mx.CommandResultFromError(err)
 	}
 
-	return h.WorkflowRepository.Save(ctx, wf)
+	return mx.CommandResultFromError(h.WorkflowRepository.Save(ctx, wf))
 }
-
-func generateRunID() string { return "some-generated-run-id" }

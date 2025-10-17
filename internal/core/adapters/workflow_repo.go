@@ -3,6 +3,7 @@ package adapters
 import (
 	"context"
 	"fmt"
+	"github.com/morebec/go-misas/misas"
 	"github.com/morebec/smallflow/internal/core"
 )
 
@@ -10,7 +11,7 @@ type EventStoreWorkflowRepository struct {
 	EventStore *InMemoryEventStore
 }
 
-func (e EventStoreWorkflowRepository) FindByID(_ context.Context, workflowID string) (*core.Workflow, error) {
+func (e EventStoreWorkflowRepository) FindByID(_ context.Context, workflowID string) (*core.Workflow, misas.Error) {
 	events := e.EventStore.Events()
 	wf := core.NewWorkflow(core.WorkflowDefinition{
 		ID:               core.WorkflowID(workflowID),
@@ -51,7 +52,7 @@ func (e EventStoreWorkflowRepository) FindByID(_ context.Context, workflowID str
 	return wf, nil
 }
 
-func (e EventStoreWorkflowRepository) Save(ctx context.Context, wf *core.Workflow) error {
+func (e EventStoreWorkflowRepository) Save(ctx context.Context, wf *core.Workflow) misas.Error {
 	for _, event := range wf.UncommittedEvents() {
 		if err := e.EventStore.Record(ctx, event); err != nil {
 			return err

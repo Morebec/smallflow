@@ -2,18 +2,16 @@ package core
 
 import (
 	"context"
-	"time"
+	"github.com/morebec/go-misas/misas"
 )
 
 type WorkflowRepository interface {
-	FindByID(ctx context.Context, workflowID string) (*Workflow, error)
-	Save(ctx context.Context, wf *Workflow) error
+	FindByID(ctx context.Context, workflowID string) (*Workflow, misas.Error)
+	Save(ctx context.Context, wf *Workflow) misas.Error
 }
 
 type RunRepository interface {
-	FindByID(ctx context.Context, workflowID string, runID string) (*Run, error)
-	Add(ctx context.Context, run *Run) error
-	Save(ctx context.Context, r *Run) error
+	FindByID(ctx context.Context, workflowID string, runID string) (*Run, misas.Error)
+	Add(ctx context.Context, run *Run) misas.Error
+	Save(ctx context.Context, r *Run) misas.Error
 }
-
-type Clock interface{ Now() time.Time }

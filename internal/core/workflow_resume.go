@@ -6,13 +6,13 @@ import (
 	"github.com/morebec/go-misas/mx"
 )
 
-type RunWorkflowCommandHandler struct {
-	Clock              misas.Clock
+type ResumeWorkflowRunCommandHandler struct {
 	WorkflowRepository WorkflowRepository
 	RunRepository      RunRepository
+	Runner             WorkflowRunner
 }
 
-func (h RunWorkflowCommandHandler) Handle(ctx context.Context, cmd RunWorkflowCommand) misas.CommandResult {
+func (h ResumeWorkflowRunCommandHandler) Handle(ctx context.Context, cmd ResumeWorkflowRunCommand) misas.CommandResult {
 	wf, err := h.WorkflowRepository.FindByID(ctx, cmd.WorkflowID)
 	if err != nil {
 		return mx.CommandResultFromError(err)
@@ -21,17 +21,10 @@ func (h RunWorkflowCommandHandler) Handle(ctx context.Context, cmd RunWorkflowCo
 		return WorkflowNotFoundCommandResult(cmd.WorkflowID)
 	}
 
-	runner := WorkflowRunner{
-		RunRepository:      h.RunRepository,
-		WorkflowRepository: h.WorkflowRepository,
-		Clock:              h.Clock,
-	}
-
-	report, err := runner.Run(ctx, wf, RunID(cmd.RunID))
+	report, err := h.Runner.ResumeFromStep(ctx, wf, RunID(cmd.RunID))
 	if err != nil {
 		return mx.CommandResultFromError(err)
 	}
 
 	return misas.CommandResult{Payload: report}
-
 }

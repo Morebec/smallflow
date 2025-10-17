@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"context"
+	"github.com/morebec/go-misas/misas"
 	"sync"
 )
 
@@ -10,7 +11,7 @@ type InMemoryEventStore struct {
 	events []any
 }
 
-func (i *InMemoryEventStore) Record(ctx context.Context, event any) error {
+func (i *InMemoryEventStore) Record(ctx context.Context, event any) misas.Error {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	i.events = append(i.events, event)

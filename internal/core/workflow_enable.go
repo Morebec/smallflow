@@ -2,24 +2,25 @@ package core
 
 import (
 	"context"
-	"fmt"
+	"github.com/morebec/go-misas/misas"
+	"github.com/morebec/go-misas/mx"
 )
 
 type EnableWorkflowCommandHandler struct {
-	Clock              Clock
+	Clock              misas.Clock
 	WorkflowRepository WorkflowRepository
 }
 
-func (h EnableWorkflowCommandHandler) Handle(ctx context.Context, cmd EnableWorkflowCommand) error {
+func (h EnableWorkflowCommandHandler) Handle(ctx context.Context, cmd EnableWorkflowCommand) misas.CommandResult {
 	workflow, err := h.WorkflowRepository.FindByID(ctx, cmd.WorkflowID)
 	if err != nil {
-		return err
+		return mx.CommandResultFromError(err)
 	}
 	if workflow == nil {
-		return fmt.Errorf("workflow not found: %s", cmd.WorkflowID)
+		return WorkflowNotFoundCommandResult(cmd.WorkflowID)
 	}
 
 	workflow.Enable(h.Clock.Now())
 
-	return h.WorkflowRepository.Save(ctx, workflow)
+	return mx.CommandResultFromError(h.WorkflowRepository.Save(ctx, workflow))
 }

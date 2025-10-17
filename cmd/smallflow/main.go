@@ -3,16 +3,21 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/alitto/pond/v2"
+	"github.com/morebec/go-misas/muuid"
+	"github.com/morebec/go-misas/mx"
 	"github.com/morebec/smallflow/internal/core"
 	"github.com/morebec/smallflow/internal/core/adapters"
 	"github.com/morebec/smallflow/internal/orchestrator"
+	adapters2 "github.com/morebec/smallflow/internal/orchestrator/adapters"
+	"time"
 )
 
 func main() {
 	fmt.Println("Build, run, and observe workflows without the overhead!")
 
 	eventStore := &adapters.InMemoryEventStore{}
-	clock := adapters.RealTimeClock{}
+	clock := mx.NewRealTimeClock(time.UTC)
 	workflowRepo := &adapters.EventStoreWorkflowRepository{
 		EventStore: eventStore,
 	}
@@ -20,45 +25,56 @@ func main() {
 		EventStore: eventStore,
 	}
 
-	api := core.NewAPI(clock, workflowRepo, runRepo)
-	orch := orchestrator.WorkflowOrchestrator{Clock: clock, API: api}
+	api := core.NewSubsystem(clock, workflowRepo, runRepo, muuid.NewRandomUUIDGenerator()).API
+	orch := &orchestrator.WorkflowOrchestrator{
+		Clock: clock,
+		API:   api,
+		LeaseManager: orchestrator.WorkflowLeaseManager{
+			Clock:      clock,
+			Repository: adapters2.NewInMemoryWorkflowLeaseRepository(),
+		},
+		Pool: pond.NewPool(10),
+	}
 
 	ctx := context.Background()
 
 	fmt.Println("Enabling workflow...")
-	if err := api.HandleCommand(ctx, core.EnableWorkflowCommand{
+	if result := api.HandleCommand(ctx, core.EnableWorkflowCommand{
 		WorkflowID: "my-workflow",
-	}); err != nil {
-		panic(err)
+	}); result.Error != nil {
+		panic(result.Error)
 	}
 
 	fmt.Println("Triggering workflow...")
-	if err := api.HandleCommand(ctx, core.TriggerWorkflowCommand{
+	if result := api.HandleCommand(ctx, core.TriggerWorkflowCommand{
 		WorkflowID: "my-workflow",
-		RunID:      "run-1",
-	}); err != nil {
-		panic(err)
-	}
-
-	fmt.Println("Triggering workflow...")
-	if err := api.HandleCommand(ctx, core.TriggerWorkflowCommand{
-		WorkflowID: "my-workflow",
-		RunID:      "run-1",
-	}); err != nil {
-		panic(err)
+		RunID:      muuid.NewRandomUUIDGenerator().Generate().String(),
+	}); result.Error != nil {
+		panic(result.Error)
 	}
 
 	fmt.Println("Disabling workflow...")
-	if err := api.HandleCommand(ctx, core.DisableWorkflowCommand{
+	if result := api.HandleCommand(ctx, core.DisableWorkflowCommand{
 		WorkflowID: "my-workflow",
-	}); err != nil {
-		panic(err)
+	}); result.Error != nil {
+		panic(result.Error)
 	}
 
 	fmt.Println("Dispatching events through the orchestrator...")
+	orch.Start()
+	defer orch.Stop()
+
 	for _, event := range eventStore.Events() {
 		if err := orch.HandleEvent(ctx, event); err != nil {
 			panic(err)
+		}
+	}
+
+	for orch.IsRunning() {
+		select {
+		case <-time.After(15 * time.Second):
+			fmt.Println("Stopping orchestrator after 15 seconds...")
+			orch.Stop()
 		}
 	}
 

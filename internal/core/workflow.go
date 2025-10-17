@@ -2,6 +2,8 @@ package core
 
 import (
 	"fmt"
+	"github.com/morebec/go-misas/misas"
+	"github.com/morebec/go-misas/mx"
 	"time"
 )
 
@@ -28,22 +30,23 @@ func NewWorkflow(d WorkflowDefinition, enabled bool) *Workflow {
 
 func (w *Workflow) ID() WorkflowID { return w.definition.ID }
 
-func (w *Workflow) Trigger(id RunID, currentTime time.Time) error {
+func (w *Workflow) Trigger(id RunID, currentTime time.Time) misas.Error {
 	if _, exists := w.runIds[id]; exists {
 		return nil // idempotent
 	}
 
+	workflowID := w.ID()
 	if !w.enabled {
-		return fmt.Errorf("workflow is not enabled: %s", w.ID())
+		return mx.ErrConflict.WithMessage(fmt.Sprintf("workflow is not enabled: %s", workflowID))
 	}
 
 	if w.definition.ConcurrencyLimit != ConcurrencyLimitNone &&
 		len(w.activeRuns) >= int(w.definition.ConcurrencyLimit) {
-		return fmt.Errorf("workflow concurrency limit reached: %s", w.ID())
+		return mx.ErrConflict.WithMessage(fmt.Sprintf("workflow concurrency limit reached: %s", workflowID))
 	}
 
 	w.record(WorkflowTriggeredEvent{
-		WorkflowID:  string(w.ID()),
+		WorkflowID:  string(workflowID),
 		RunID:       string(id),
 		TriggeredAt: currentTime,
 	})

@@ -1,53 +1,43 @@
 package core
 
 import (
-	"context"
 	"fmt"
+	"github.com/morebec/go-misas/misas"
+	"github.com/morebec/go-misas/muuid"
+	"github.com/morebec/go-misas/mx"
 	"time"
 )
 
-type API struct {
-	EnableWorkflowCommandHandler  EnableWorkflowCommandHandler
-	DisableWorkflowCommandHandler DisableWorkflowCommandHandler
-	TriggerWorkflowCommandHandler TriggerWorkflowCommandHandler
-	RunWorkflowCommandHandler     RunWorkflowCommandHandler
-}
-
-func NewAPI(clock Clock, workflowRepo WorkflowRepository, repo RunRepository) *API {
-	return &API{
-		EnableWorkflowCommandHandler: EnableWorkflowCommandHandler{
-			Clock:              clock,
+func NewSubsystem(
+	clock misas.Clock,
+	workflowRepo WorkflowRepository,
+	runRepository RunRepository,
+	uidg muuid.UUIDGenerator,
+) misas.BusinessSubsystem {
+	return mx.NewBusinessSubsystemAssembler().
+		WithCommandHandler(EnableWorkflowCommandTypeName, mx.NewTypedCommandHandler(EnableWorkflowCommandHandler{
 			WorkflowRepository: workflowRepo,
-		},
-		DisableWorkflowCommandHandler: DisableWorkflowCommandHandler{
 			Clock:              clock,
+		})).
+		WithCommandHandler(DisableWorkflowCommandTypeName, mx.NewTypedCommandHandler(DisableWorkflowCommandHandler{
 			WorkflowRepository: workflowRepo,
-		},
-		TriggerWorkflowCommandHandler: TriggerWorkflowCommandHandler{
 			Clock:              clock,
+		})).
+		WithCommandHandler(TriggerWorkflowCommandTypeName, mx.NewTypedCommandHandler(TriggerWorkflowCommandHandler{
 			WorkflowRepository: workflowRepo,
-		},
-		RunWorkflowCommandHandler: RunWorkflowCommandHandler{
+			UUIDGenerator:      uidg,
 			Clock:              clock,
+		})).
+		WithCommandHandler(RunWorkflowCommandTypeName, mx.NewTypedCommandHandler(RunWorkflowCommandHandler{
 			WorkflowRepository: workflowRepo,
-			RunRepository:      repo,
-		},
-	}
-}
-
-func (api API) HandleCommand(ctx context.Context, cmd any) error {
-	switch c := cmd.(type) {
-	case EnableWorkflowCommand:
-		return api.EnableWorkflowCommandHandler.Handle(ctx, c)
-	case DisableWorkflowCommand:
-		return api.DisableWorkflowCommandHandler.Handle(ctx, c)
-	case TriggerWorkflowCommand:
-		return api.TriggerWorkflowCommandHandler.Handle(ctx, c)
-	case RunWorkflowCommand:
-		return api.RunWorkflowCommandHandler.Handle(ctx, c)
-	default:
-		return fmt.Errorf("unknown command type: %T", cmd)
-	}
+			RunRepository:      runRepository,
+			Clock:              clock,
+		})).
+		WithCommandHandler(ResumeWorkflowRunCommandTypeName, mx.NewTypedCommandHandler(ResumeWorkflowRunCommandHandler{
+			WorkflowRepository: workflowRepo,
+			RunRepository:      runRepository,
+		})).
+		Assemble()
 }
 
 // TriggerWorkflowCommand represents a command to trigger a new run of a
@@ -69,11 +59,19 @@ type TriggerWorkflowCommand struct {
 	RunID      string
 }
 
+const TriggerWorkflowCommandTypeName = "TriggerWorkflowCommand"
+
+func (TriggerWorkflowCommand) TypeName() misas.CommandTypeName { return TriggerWorkflowCommandTypeName }
+
 type WorkflowTriggeredEvent struct {
 	WorkflowID  string
 	RunID       string
 	TriggeredAt time.Time
 }
+
+const WorkflowTriggeredEventTypeName = "WorkflowTriggeredEvent"
+
+func (WorkflowTriggeredEvent) TypeName() misas.EventTypeName { return WorkflowTriggeredEventTypeName }
 
 // EnableWorkflowCommand represents a command to enable a workflow. Enabling a
 // workflow allows new runs to be triggered. If the workflow does not exist, this
@@ -82,12 +80,20 @@ type EnableWorkflowCommand struct {
 	WorkflowID string
 }
 
+const EnableWorkflowCommandTypeName = "EnableWorkflowCommand"
+
+func (EnableWorkflowCommand) TypeName() misas.CommandTypeName { return EnableWorkflowCommandTypeName }
+
 // WorkflowEnabledEvent is emitted when a workflow is successfully enabled.
 
 type WorkflowEnabledEvent struct {
 	WorkflowID string
 	EnabledAt  time.Time
 }
+
+const WorkflowEnabledEventTypeName = "WorkflowEnabledEvent"
+
+func (WorkflowEnabledEvent) TypeName() misas.EventTypeName { return WorkflowEnabledEventTypeName }
 
 // DisableWorkflowCommand represents a command to disable a workflow. Disabling a
 // workflow prevents new runs from being triggered, but does not affect currently
@@ -96,17 +102,29 @@ type DisableWorkflowCommand struct {
 	WorkflowID string
 }
 
+const DisableWorkflowCommandTypeName = "DisableWorkflowCommand"
+
+func (DisableWorkflowCommand) TypeName() misas.CommandTypeName { return DisableWorkflowCommandTypeName }
+
 type WorkflowDisabledEvent struct {
 	WorkflowID string
 	DisabledAt time.Time
 	ActiveRuns int
 }
 
+const WorkflowDisabledEventTypeName = "WorkflowDisabledEvent"
+
+func (WorkflowDisabledEvent) TypeName() misas.EventTypeName { return WorkflowDisabledEventTypeName }
+
 type WorkflowStartedEvent struct {
 	WorkflowID string
 	RunID      string
 	StartedAt  time.Time
 }
+
+const WorkflowStartedEventTypeName = "WorkflowStartedEvent"
+
+func (WorkflowStartedEvent) TypeName() misas.EventTypeName { return WorkflowStartedEventTypeName }
 
 type WorkflowEndedEvent struct {
 	WorkflowID string
@@ -117,6 +135,10 @@ type WorkflowEndedEvent struct {
 	Status     string
 }
 
+const WorkflowEndedEventTypeName = "WorkflowEndedEvent"
+
+func (WorkflowEndedEvent) TypeName() misas.EventTypeName { return WorkflowEndedEventTypeName }
+
 type StepStartedEvent struct {
 	WorkflowID   string
 	RunID        string
@@ -125,6 +147,10 @@ type StepStartedEvent struct {
 	StartedAt    time.Time
 	IgnoreErrors bool
 }
+
+const StepStartedEventTypeName = "StepStartedEvent"
+
+func (StepStartedEvent) TypeName() misas.EventTypeName { return StepStartedEventTypeName }
 
 type StepEndedEvent struct {
 	WorkflowID string
@@ -135,6 +161,10 @@ type StepEndedEvent struct {
 	Error      *WorkflowError
 	Status     string
 }
+
+const StepEndedEventTypeName = "StepEndedEvent"
+
+func (StepEndedEvent) TypeName() misas.EventTypeName { return StepEndedEventTypeName }
 
 type WorkflowError struct {
 	Kind    string         // e.g. "user", "system", "internal"
@@ -164,6 +194,21 @@ type RunWorkflowCommand struct {
 	RunID      string
 }
 
+const RunWorkflowCommandTypeName = "RunWorkflowCommand"
+
+func (RunWorkflowCommand) TypeName() misas.CommandTypeName { return RunWorkflowCommandTypeName }
+
+type ResumeWorkflowRunCommand struct {
+	WorkflowID string
+	RunID      string
+}
+
+const ResumeWorkflowRunCommandTypeName = "ResumeWorkflowRunCommand"
+
+func (ResumeWorkflowRunCommand) TypeName() misas.CommandTypeName {
+	return ResumeWorkflowRunCommandTypeName
+}
+
 type WorkflowRunReport struct {
 	WorkflowID string
 	RunID      string
@@ -172,3 +217,11 @@ type WorkflowRunReport struct {
 	Errors     map[string]*WorkflowError
 	Status     string
 }
+
+const ErrorCodeWorkflowNotFound misas.ErrorCode = "workflow_not_found"
+
+var ErrWorkflowNotFound = mx.ErrNotFound.WithCode(ErrorCodeWorkflowNotFound).WithMessage("workflow not found")
+
+const ErrorCodeRunNotFound misas.ErrorCode = "workflow_run_not_found"
+
+var ErrWorkflowRunNotFound = mx.ErrNotFound.WithCode(ErrorCodeRunNotFound).WithMessage("workflow run not found")
