@@ -3,6 +3,7 @@ package orchestrator
 import (
 	"context"
 	"fmt"
+
 	"github.com/alitto/pond/v2"
 	"github.com/morebec/go-misas/misas"
 	"github.com/morebec/go-misas/muuid"
@@ -68,18 +69,15 @@ func (m *WorkflowOrchestrator) IsRunning() bool {
 func (m *WorkflowOrchestrator) HandleEvent(ctx context.Context, event misas.Event) misas.Error {
 	switch e := event.(type) {
 	case workflowmgmt.WorkflowTriggeredEvent:
-		err := m.runWorkflow(ctx, e)
-		if err != nil {
-			return mx.NewInternalErrorFrom(err)
-		}
+		m.runWorkflow(ctx, e)
 		return nil
 	}
 
 	return nil
 }
 
-func (m *WorkflowOrchestrator) runWorkflow(_ context.Context, e workflowmgmt.WorkflowTriggeredEvent) error {
-	pond.Submit(func() {
+func (m *WorkflowOrchestrator) runWorkflow(_ context.Context, e workflowmgmt.WorkflowTriggeredEvent) {
+	m.Pool.Submit(func() {
 		runner := Worker{
 			Clock:        m.Clock,
 			API:          m.API,
@@ -90,5 +88,4 @@ func (m *WorkflowOrchestrator) runWorkflow(_ context.Context, e workflowmgmt.Wor
 			fmt.Println("workflow runner error:", err)
 		}
 	})
-	return nil
 }

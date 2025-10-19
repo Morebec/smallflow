@@ -2,6 +2,7 @@ package workflowmgmt
 
 import (
 	"context"
+
 	"github.com/morebec/go-misas/misas"
 	"github.com/morebec/go-misas/mx"
 )
@@ -33,5 +34,4 @@ func (h RunWorkflowCommandHandler) Handle(ctx context.Context, cmd RunWorkflowCo
 	}
 
 	return misas.CommandResult{Payload: report}
-
 }

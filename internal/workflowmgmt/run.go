@@ -2,9 +2,10 @@ package workflowmgmt
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/morebec/go-misas/misas"
 	"github.com/morebec/go-misas/mx"
-	"time"
 )
 
 type WorkflowStatus string
@@ -106,22 +107,13 @@ func (r *Run) End(currentTime time.Time) {
 		return
 	}
 
-	// Collect step errors
-	var stepErrors map[string]WorkflowError
 	workflowStatus := WorkflowStatusSucceeded
 	for _, s := range r.Steps {
-		if s.Error != nil {
-			if stepErrors == nil {
-				stepErrors = make(map[string]WorkflowError)
-			}
-			stepErrors[string(s.ID)] = *s.Error
-		}
 		if s.Status == StepStatusFailed {
 			workflowStatus = WorkflowStatusFailed
+			break
 		}
 	}
-
-	// Compute Status
 
 	r.record(WorkflowEndedEvent{
 		RunID:      string(r.ID),

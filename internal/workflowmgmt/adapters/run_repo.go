@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"context"
+
 	"github.com/morebec/go-misas/misas"
 	"github.com/morebec/go-misas/muuid"
 	"github.com/morebec/go-misas/mx"
@@ -12,7 +13,6 @@ import (
 type EventStoreRunRepository struct {
 	UUIDGenerator muuid.UUIDGenerator
 	EventStore    misas.EventStore
-	EventRegistry *mx.MessageRegistry[misas.EventTypeName, misas.Event]
 }
 
 func (r EventStoreRunRepository) Add(ctx context.Context, run *workflowmgmt.Run) misas.Error {
@@ -38,7 +38,6 @@ func (r EventStoreRunRepository) Add(ctx context.Context, run *workflowmgmt.Run)
 	run.Commit()
 
 	return nil
-
 }
 
 func (r EventStoreRunRepository) Save(ctx context.Context, run *workflowmgmt.Run) misas.Error {
@@ -96,5 +95,4 @@ func (r EventStoreRunRepository) FindByID(ctx context.Context, workflowID string
 	run.Apply(events)
 
 	return run, nil
-
 }

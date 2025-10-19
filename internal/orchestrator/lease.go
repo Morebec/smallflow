@@ -2,8 +2,9 @@ package orchestrator
 
 import (
 	"context"
-	"github.com/morebec/go-misas/misas"
 	"time"
+
+	"github.com/morebec/go-misas/misas"
 )
 
 const defaultLeaseDuration = 5 * time.Minute

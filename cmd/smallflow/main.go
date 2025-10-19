@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/morebec/go-misas/misas"
 	"github.com/morebec/go-misas/mpostgres"
 	"github.com/morebec/go-misas/muuid"
@@ -11,7 +13,6 @@ import (
 	adapters2 "github.com/morebec/smallflow/internal/orchestrator/adapters"
 	"github.com/morebec/smallflow/internal/workflowmgmt"
 	"github.com/morebec/smallflow/internal/workflowmgmt/adapters"
-	"time"
 )
 
 func main() {
@@ -30,26 +31,22 @@ func main() {
 		panic(err)
 	}
 
-	eventRegistry := mx.NewMessageRegistry[misas.EventTypeName, misas.Event]()
+	mx.EventRegistry.Register(workflowmgmt.WorkflowEnabledEventTypeName, workflowmgmt.WorkflowEnabledEvent{})
+	mx.EventRegistry.Register(workflowmgmt.WorkflowDisabledEventTypeName, workflowmgmt.WorkflowDisabledEvent{})
+	mx.EventRegistry.Register(workflowmgmt.WorkflowTriggeredEventTypeName, workflowmgmt.WorkflowTriggeredEvent{})
+	mx.EventRegistry.Register(workflowmgmt.WorkflowStartedEventTypeName, workflowmgmt.WorkflowStartedEvent{})
+	mx.EventRegistry.Register(workflowmgmt.WorkflowEndedEventTypeName, workflowmgmt.WorkflowEndedEvent{})
+	mx.EventRegistry.Register(workflowmgmt.StepStartedEventTypeName, workflowmgmt.StepStartedEvent{})
+	mx.EventRegistry.Register(workflowmgmt.StepEndedEventTypeName, workflowmgmt.StepEndedEvent{})
 
-	eventRegistry.Register(workflowmgmt.WorkflowEnabledEventTypeName, workflowmgmt.WorkflowEnabledEvent{})
-	eventRegistry.Register(workflowmgmt.WorkflowDisabledEventTypeName, workflowmgmt.WorkflowDisabledEvent{})
-	eventRegistry.Register(workflowmgmt.WorkflowTriggeredEventTypeName, workflowmgmt.WorkflowTriggeredEvent{})
-	eventRegistry.Register(workflowmgmt.WorkflowStartedEventTypeName, workflowmgmt.WorkflowStartedEvent{})
-	eventRegistry.Register(workflowmgmt.WorkflowEndedEventTypeName, workflowmgmt.WorkflowEndedEvent{})
-	eventRegistry.Register(workflowmgmt.StepStartedEventTypeName, workflowmgmt.StepStartedEvent{})
-	eventRegistry.Register(workflowmgmt.StepEndedEventTypeName, workflowmgmt.StepEndedEvent{})
-
-	eventStore = mx.NewEventStoreDeserializerDecorator(eventStore, eventRegistry)
+	eventStore = mx.NewEventStoreDeserializerDecorator(eventStore)
 
 	workflowRepo := &adapters.EventStoreWorkflowRepository{
 		EventStore:    eventStore,
-		EventRegistry: eventRegistry,
 		UUIDGenerator: muuid.NewRandomUUIDGenerator(),
 	}
 	runRepo := &adapters.EventStoreRunRepository{
 		EventStore:    eventStore,
-		EventRegistry: eventRegistry,
 		UUIDGenerator: muuid.NewRandomUUIDGenerator(),
 	}
 
@@ -108,12 +105,4 @@ func main() {
 	for i, event := range stream.Events {
 		fmt.Printf("Event %d: %T → %+v\n", i, event, event)
 	}
-}
-
-func registerActions() {
-	//actionRegistry := definition.ActionRegistry{}
-	//actionRegistry.Register(definition.NewActionFunc("my_action", func(ctx definition.Action) *definition.ActionError {
-	//	fmt.Println("Hello, World!")
-	//	return nil
-	//}))
 }

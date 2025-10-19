@@ -2,6 +2,7 @@ package adapters
 
 import (
 	"context"
+
 	"github.com/morebec/go-misas/mpostgres"
 	"github.com/morebec/smallflow/internal/orchestrator"
 )
@@ -57,7 +58,6 @@ func (r PostgresWorkflowLeaseRepository) Update(ctx context.Context, lease orche
 	}
 
 	return nil
-
 }
 
 func (r PostgresWorkflowLeaseRepository) Remove(ctx context.Context, workflowID string, runID string) error {

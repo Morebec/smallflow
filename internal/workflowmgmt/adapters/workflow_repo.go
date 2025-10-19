@@ -3,6 +3,7 @@ package adapters
 import (
 	"context"
 	"fmt"
+
 	"github.com/morebec/go-misas/misas"
 	"github.com/morebec/go-misas/muuid"
 	"github.com/morebec/go-misas/mx"
@@ -12,7 +13,6 @@ import (
 
 type EventStoreWorkflowRepository struct {
 	EventStore    misas.EventStore
-	EventRegistry *mx.MessageRegistry[misas.EventTypeName, misas.Event]
 	UUIDGenerator muuid.UUIDGenerator
 }
 
