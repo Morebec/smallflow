@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/morebec/go-misas/misas"
-	"github.com/morebec/smallflow/internal/core"
+	"github.com/morebec/smallflow/internal/workflowmgmt"
 	"time"
 )
 
@@ -55,7 +55,8 @@ func (r Worker) acquireLease(ctx context.Context, workflowID, runID string) (con
 		ticker.Stop()
 		cancel()
 		// Release the lease when stopping the heartbeat
-		if err := r.LeaseManager.Release(ctx, workflowID, runID); err != nil {
+		// use context.Background() given we just canceled the original context.
+		if err := r.LeaseManager.Release(context.Background(), workflowID, runID); err != nil {
 			fmt.Printf(
 				"Failed to release lease for workflow run: {workflowID: %s, runID: %s}: %s\n",
 				workflowID,
@@ -80,7 +81,7 @@ func (r Worker) Run(ctx context.Context, workflowID, runID string) error {
 	}
 	defer releaseLease()
 
-	result := r.API.HandleCommand(ctx, core.RunWorkflowCommand{
+	result := r.API.HandleCommand(ctx, workflowmgmt.RunWorkflowCommand{
 		WorkflowID: workflowID,
 		RunID:      runID,
 	})

@@ -1,4 +1,4 @@
-package core
+package workflowmgmt
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ type Run struct {
 	CurrentStepID StepID
 	Steps         map[StepID]*StepRun
 
-	events []any
+	events []misas.Event
 	Status WorkflowStatus
 }
 
@@ -129,6 +129,7 @@ func (r *Run) End(currentTime time.Time) {
 		StartedAt:  r.StartedAt,
 		EndedAt:    currentTime,
 		Status:     string(workflowStatus),
+		Errors:     r.Errors(),
 	})
 }
 
@@ -143,7 +144,7 @@ func (r *Run) Errors() map[string]*WorkflowError {
 	return stepErrors
 }
 
-func (r *Run) Apply(events []any) {
+func (r *Run) Apply(events []misas.Event) {
 	for _, event := range events {
 		switch e := event.(type) {
 		case WorkflowStartedEvent:
@@ -175,11 +176,11 @@ func (r *Run) Apply(events []any) {
 	}
 }
 
-func (r *Run) UncommittedEvents() []any { return r.events }
+func (r *Run) UncommittedEvents() []misas.Event { return r.events }
 
-func (r *Run) record(event any) {
+func (r *Run) record(event misas.Event) {
 	r.events = append(r.events, event)
-	r.Apply([]any{event})
+	r.Apply([]misas.Event{event})
 }
 
 func (r *Run) Commit() { r.events = nil }

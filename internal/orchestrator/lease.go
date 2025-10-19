@@ -14,7 +14,7 @@ type WorkflowLease struct {
 	expiresAt  time.Time
 }
 
-func (l WorkflowLease) IsExpired(currentTime time.Time) bool { return currentTime.After(l.expiresAt) }
+func (wl WorkflowLease) IsExpired(currentTime time.Time) bool { return currentTime.After(wl.expiresAt) }
 
 type WorkflowLeaseRepository interface {
 	Add(context.Context, WorkflowLease) error

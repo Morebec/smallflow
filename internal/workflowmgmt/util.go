@@ -1,4 +1,4 @@
-package core
+package workflowmgmt
 
 import "github.com/morebec/go-misas/misas"
 

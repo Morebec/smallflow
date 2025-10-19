@@ -1,4 +1,4 @@
-package core
+package workflowmgmt
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ type Workflow struct {
 	runIds     map[RunID]struct{}
 	activeRuns map[RunID]struct{}
 
-	events []any
+	events []misas.Event
 }
 
 func NewWorkflow(d WorkflowDefinition, enabled bool) *Workflow {
@@ -76,14 +76,14 @@ func (w *Workflow) Disable(now time.Time) {
 	})
 }
 
-func (w *Workflow) record(event any) {
-	w.Apply([]any{event})
+func (w *Workflow) record(event misas.Event) {
+	w.Apply([]misas.Event{event})
 	w.events = append(w.events, event)
 }
 
-func (w *Workflow) UncommittedEvents() []any { return w.events }
+func (w *Workflow) UncommittedEvents() []misas.Event { return w.events }
 
-func (w *Workflow) Apply(events []any) {
+func (w *Workflow) Apply(events []misas.Event) {
 	for _, event := range events {
 		switch e := event.(type) {
 		case WorkflowTriggeredEvent:
