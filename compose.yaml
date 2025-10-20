@@ -1,8 +1,22 @@
 services:
-  smallflow:
-    image: smallflow
-    build:
-      context: .
-      dockerfile: ./Dockerfile
+#  smallflow:
+#    image: smallflow
+#    build:
+#      context: .
+#      dockerfile: ./Dockerfile
+#    ports:
+#      - 3000:3000
+
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: smallflow
+      POSTGRES_PASSWORD: smallflow
+      POSTGRES_DB: smallflow
     ports:
-      - 3000:3000
+      - "5432:5432"
+    volumes:
+      - postgres:/var/lib/postgresql/data
+
+volumes:
+  postgres:
