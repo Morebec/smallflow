@@ -1,13 +1,13 @@
-package adapters
+package postgres
 
 import (
 	"context"
 	"fmt"
+	"github.com/morebec/smallflow/internal/business/workflowmgmt"
 
 	"github.com/morebec/go-misas/misas"
 	"github.com/morebec/go-misas/muuid"
 	"github.com/morebec/go-misas/mx"
-	"github.com/morebec/smallflow/internal/workflowmgmt"
 	"github.com/samber/lo"
 )
 

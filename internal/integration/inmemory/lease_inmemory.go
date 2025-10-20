@@ -2,9 +2,8 @@ package adapters
 
 import (
 	"context"
+	"github.com/morebec/smallflow/internal/application/orchestrator"
 	"sync"
-
-	"github.com/morebec/smallflow/internal/orchestrator"
 )
 
 type InMemoryWorkflowLeaseRepository struct {

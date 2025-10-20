@@ -3,10 +3,10 @@ package orchestrator
 import (
 	"context"
 	"fmt"
+	"github.com/morebec/smallflow/internal/business/workflowmgmt"
 	"time"
 
 	"github.com/morebec/go-misas/misas"
-	"github.com/morebec/smallflow/internal/workflowmgmt"
 )
 
 const defaultLeaseHeartbeatDuration = time.Second * 30

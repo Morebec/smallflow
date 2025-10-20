@@ -3,16 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	orchestrator2 "github.com/morebec/smallflow/internal/application/orchestrator"
+	"github.com/morebec/smallflow/internal/business/workflowmgmt"
+	"github.com/morebec/smallflow/internal/integration/postgres"
 	"time"
 
 	"github.com/morebec/go-misas/misas"
 	"github.com/morebec/go-misas/mpostgres"
 	"github.com/morebec/go-misas/muuid"
 	"github.com/morebec/go-misas/mx"
-	"github.com/morebec/smallflow/internal/orchestrator"
-	adapters2 "github.com/morebec/smallflow/internal/orchestrator/adapters"
-	"github.com/morebec/smallflow/internal/workflowmgmt"
-	"github.com/morebec/smallflow/internal/workflowmgmt/adapters"
 )
 
 func main() {
@@ -41,22 +40,22 @@ func main() {
 
 	eventStore = mx.NewEventStoreDeserializerDecorator(eventStore)
 
-	workflowRepo := &adapters.EventStoreWorkflowRepository{
+	workflowRepo := &postgres.EventStoreWorkflowRepository{
 		EventStore:    eventStore,
 		UUIDGenerator: muuid.NewRandomUUIDGenerator(),
 	}
-	runRepo := &adapters.EventStoreRunRepository{
+	runRepo := &postgres.EventStoreRunRepository{
 		EventStore:    eventStore,
 		UUIDGenerator: muuid.NewRandomUUIDGenerator(),
 	}
 
 	api := workflowmgmt.NewSubsystem(clock, workflowRepo, runRepo, muuid.NewRandomUUIDGenerator()).API
-	workflowLeaseRepository, err := adapters2.NewPostgresWorkflowLeaseRepository(dbConn)
+	workflowLeaseRepository, err := postgres.NewWorkflowLeaseRepository(dbConn)
 	if err != nil {
 		panic(err)
 	}
 
-	leaseManager := orchestrator.WorkflowLeaseManager{
+	leaseManager := orchestrator2.WorkflowLeaseManager{
 		Clock:      clock,
 		Repository: workflowLeaseRepository,
 	}
@@ -65,7 +64,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	orch := orchestrator.NewWorkflowOrchestrator(
+	orch := orchestrator2.NewWorkflowOrchestrator(
 		clock,
 		api,
 		leaseManager,

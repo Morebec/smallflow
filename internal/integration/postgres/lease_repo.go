@@ -1,36 +1,36 @@
-package adapters
+package postgres
 
 import (
 	"context"
+	"github.com/morebec/smallflow/internal/application/orchestrator"
 
 	"github.com/morebec/go-misas/mpostgres"
-	"github.com/morebec/smallflow/internal/orchestrator"
 )
 
-type PostgresWorkflowLeaseRepository struct {
+type WorkflowLeaseRepository struct {
 	conn       mpostgres.DB
 	collection mpostgres.Collection
 }
 
-func NewPostgresWorkflowLeaseRepository(conn mpostgres.DB) (PostgresWorkflowLeaseRepository, error) {
+func NewWorkflowLeaseRepository(conn mpostgres.DB) (WorkflowLeaseRepository, error) {
 	ctx := context.Background()
 	docStore, err := mpostgres.NewDocumentStore(ctx, conn)
 	if err != nil {
-		return PostgresWorkflowLeaseRepository{}, err
+		return WorkflowLeaseRepository{}, err
 	}
 
 	collection, err := docStore.Collection("workflow_leases")
 	if err != nil {
-		return PostgresWorkflowLeaseRepository{}, err
+		return WorkflowLeaseRepository{}, err
 	}
 	if err := collection.Create(ctx); err != nil {
-		return PostgresWorkflowLeaseRepository{}, err
+		return WorkflowLeaseRepository{}, err
 	}
 
-	return PostgresWorkflowLeaseRepository{conn: conn, collection: collection}, nil
+	return WorkflowLeaseRepository{conn: conn, collection: collection}, nil
 }
 
-func (r PostgresWorkflowLeaseRepository) Add(ctx context.Context, lease orchestrator.WorkflowLease) error {
+func (r WorkflowLeaseRepository) Add(ctx context.Context, lease orchestrator.WorkflowLease) error {
 	doc, err := mpostgres.NewDocument(r.workflowLeasID(lease.WorkflowID, lease.RunID), lease)
 	if err != nil {
 		return err
@@ -43,11 +43,11 @@ func (r PostgresWorkflowLeaseRepository) Add(ctx context.Context, lease orchestr
 	return nil
 }
 
-func (r PostgresWorkflowLeaseRepository) workflowLeasID(workflowID, runID string) string {
+func (r WorkflowLeaseRepository) workflowLeasID(workflowID, runID string) string {
 	return workflowID + "/" + runID
 }
 
-func (r PostgresWorkflowLeaseRepository) Update(ctx context.Context, lease orchestrator.WorkflowLease) error {
+func (r WorkflowLeaseRepository) Update(ctx context.Context, lease orchestrator.WorkflowLease) error {
 	doc, err := mpostgres.NewDocument(r.workflowLeasID(lease.WorkflowID, lease.RunID), lease)
 	if err != nil {
 		return err
@@ -60,7 +60,7 @@ func (r PostgresWorkflowLeaseRepository) Update(ctx context.Context, lease orche
 	return nil
 }
 
-func (r PostgresWorkflowLeaseRepository) Remove(ctx context.Context, workflowID string, runID string) error {
+func (r WorkflowLeaseRepository) Remove(ctx context.Context, workflowID string, runID string) error {
 	if _, err := r.collection.RemoveByID(ctx, r.workflowLeasID(workflowID, runID)); err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (r PostgresWorkflowLeaseRepository) Remove(ctx context.Context, workflowID 
 	return nil
 }
 
-func (r PostgresWorkflowLeaseRepository) FindByWorkflowRunID(ctx context.Context, workflowID string, runID string) (*orchestrator.WorkflowLease, error) {
+func (r WorkflowLeaseRepository) FindByWorkflowRunID(ctx context.Context, workflowID string, runID string) (*orchestrator.WorkflowLease, error) {
 	doc, err := r.collection.FindByID(ctx, r.workflowLeasID(workflowID, runID))
 	if err != nil {
 		return nil, err
